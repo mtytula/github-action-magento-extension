@@ -12,15 +12,39 @@ function magento(ctx, args, options = {}) {
   return ctx.sh.exec('php', ['-d', 'memory_limit=-1', 'bin/magento', ...args, '--no-ansi'], { cwd: ctx.config.magentoRoot, ...options });
 }
 
+const VERSION = /^[0-9]+\.[0-9]+\.[0-9]+([-+.][0-9A-Za-z.-]+)?$/;
+
+/**
+ * The version the checkout is installed as: none, the `package-version` input, or the nearest tag.
+ * A dependency that requires the extension at `^1.0` cannot resolve against a `dev-` version.
+ */
+async function resolvePackageVersion(ctx) {
+  const requested = ctx.config.packageVersion;
+  if (requested !== 'tag') {
+    return requested;
+  }
+  const described = await ctx.sh.exec('git', ['-C', ctx.config.extension, 'describe', '--tags', '--abbrev=0'], { echo: false, allowFailure: true });
+  if (described.code !== 0) {
+    throw new CheckFailed('package-version tag needs the tags in the checkout; use fetch-depth: 0 in actions/checkout');
+  }
+  const tag = described.stdout.trim();
+  const version = tag.replace(/^v/, '');
+  if (!VERSION.test(version)) {
+    throw new CheckFailed(`package-version tag: the nearest tag '${tag}' is not a version such as 1.4.0`);
+  }
+  return version;
+}
+
 async function install(ctx) {
   const { config } = ctx;
   const { magentoRoot: root, extension, extensionName, repositories } = config;
+  const version = await resolvePackageVersion(ctx);
   const template = templateRepositoryUrl(repositories);
   await ctx.sh.exec('composer', ['create-project', '--no-install', '--no-progress', ...(template ? [`--repository-url=${template}`] : []),
     `magento/project-community-edition=${config.magentoVersion}`, root]);
   fs.mkdirSync(path.join(root, 'app', 'etc'), { recursive: true });
   const composerFile = path.join(root, 'composer.json');
-  const project = withExtension(JSON.parse(fs.readFileSync(composerFile, 'utf8')), extension, extensionName, repositories);
+  const project = withExtension(JSON.parse(fs.readFileSync(composerFile, 'utf8')), extension, extensionName, repositories, version);
   fs.writeFileSync(composerFile, `${JSON.stringify(project, null, 4)}\n`);
 
   // Old release lines carry dependencies with published advisories; Composer would refuse to
@@ -56,7 +80,7 @@ async function install(ctx) {
   const product = await ctx.sh.exec('composer', ['show', 'magento/product-community-edition'], { cwd: root, echo: false });
   ctx.log(product.stdout.split('\n').filter((line) => line.startsWith('versions')).join('\n'));
   const composerVersion = (await ctx.sh.exec('composer', ['--version', '--no-ansi'], { echo: false })).stdout.split(/\s+/)[2];
-  return { status: 'passed', note: `Composer ${composerVersion}, ${extensionName} installed as an exact copy of the checkout` };
+  return { status: 'passed', note: `Composer ${composerVersion}, ${extensionName} installed as an exact copy of the checkout${version ? `, as version ${version}` : ''}` };
 }
 
 async function enableModules(ctx) {
@@ -99,4 +123,4 @@ async function staticContent(ctx) {
   return { status: 'passed', note: `no database; locales: ${config.locales.join(' ')}` };
 }
 
-module.exports = { install, compile, staticContent, HELPERS };
+module.exports = { install, compile, staticContent, resolvePackageVersion, HELPERS };

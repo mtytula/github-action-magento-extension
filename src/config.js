@@ -89,6 +89,8 @@ function readConfig(env, { phpRuntime = '' } = {}) {
     repositories: parseRepositories(value('MEC_COMPOSER_REPOSITORIES', value('MAGENTO_EXTENSION_CHECK_COMPOSER_REPOSITORIES')))
       || [{ type: 'composer', url: 'https://mirror.mage-os.org/' }],
     customRepositories: value('MEC_COMPOSER_REPOSITORIES', value('MAGENTO_EXTENSION_CHECK_COMPOSER_REPOSITORIES')).trim() !== '',
+    packageVersion: requireMatch(value('MEC_PACKAGE_VERSION'), /^(|tag|[0-9]+\.[0-9]+\.[0-9]+([-+.][0-9A-Za-z.-]+)?)$/,
+      'package-version must be empty, tag or a version such as 1.4.0.'),
     phpcs: {
       severity: requireMatch(value('MEC_PHPCS_SEVERITY'), /^[0-9]*$/, 'phpcs-severity must be a whole number.'),
       scope: requireMatch(value('MEC_PHPCS_SCOPE', 'changed'), /^(changed|all)$/, 'phpcs-scope must be changed or all.'),

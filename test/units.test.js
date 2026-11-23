@@ -17,6 +17,8 @@ const { CheckFailed } = require('../src/errors');
 const { defaultConfiguration } = require('../src/checks/phpstan');
 const { resolveToolConfig } = require('../src/checks/tool-config');
 const { validate } = require('../src/checks/static');
+const { resolvePackageVersion } = require('../src/checks/magento');
+const { createShell } = require('../src/shell');
 const { workspace } = require('./helpers');
 
 test('modules, PHP files and test directories of an extension', () => {
@@ -229,6 +231,34 @@ test('results keep one row per check and fail on failed or blocked', () => {
   assert.deepEqual(checks, [{ check: 'unit', status: 'passed', seconds: 2, note: 'b' }]);
   assert.equal(overallStatus(checks), 'passed');
   assert.equal(overallStatus([{ status: 'skipped' }, { status: 'blocked' }]), 'failed');
+});
+
+test('the path repository can give the checkout a version', () => {
+  const project = withExtension({ require: {} }, '/w/ext', 'acme/ext', [], '1.4.0');
+  assert.deepEqual(project.repositories[0], { type: 'path', url: '/w/ext', options: { symlink: false, versions: { 'acme/ext': '1.4.0' } } });
+  assert.deepEqual(withExtension({ require: {} }, '/w/ext', 'acme/ext', []).repositories[0].options, { symlink: false });
+});
+
+test('package version from the input or from the nearest tag of the checkout', async () => {
+  const { execFileSync } = require('node:child_process');
+  const { extension } = workspace();
+  const git = (...args) => execFileSync('git', ['-C', extension, '-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { stdio: 'pipe' });
+  const ctx = (packageVersion) => ({ config: { extension, packageVersion }, sh: createShell(() => {}) });
+  git('init', '-q');
+  git('add', '.');
+  git('commit', '-q', '-m', 'one');
+
+  assert.equal(await resolvePackageVersion(ctx('')), '');
+  assert.equal(await resolvePackageVersion(ctx('2.0.1')), '2.0.1');
+  await assert.rejects(resolvePackageVersion(ctx('tag')), (error) => error instanceof CheckFailed && /fetch-depth: 0/.test(error.note));
+
+  git('tag', 'v1.4.0');
+  fs.writeFileSync(path.join(extension, 'Model/Demo.php'), '<?php class Demo { }');
+  git('commit', '-q', '-am', 'two');
+  assert.equal(await resolvePackageVersion(ctx('tag')), '1.4.0');
+
+  git('tag', 'release-candidate');
+  await assert.rejects(resolvePackageVersion(ctx('tag')), /release-candidate/);
 });
 
 test('generated PHPUnit and PHPStan configurations', () => {
