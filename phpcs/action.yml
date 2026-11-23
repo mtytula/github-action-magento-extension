@@ -50,6 +50,12 @@ inputs:
       dependency. The checkout stays the only source of the extension itself.
     required: false
     default: ''
+  composer-cache:
+    description: >-
+      `actions` caches Composer downloads with `actions/cache`; `none` leaves them to the runner,
+      for example a self-hosted runner with a persistent `COMPOSER_CACHE_DIR`.
+    required: false
+    default: 'actions'
 
 outputs:
   status:
@@ -67,17 +73,18 @@ runs:
       shell: bash
       env:
         MEC_WORK_DIR: ${{ runner.temp }}/magento-extension-check
+        MEC_COMPOSER_CACHE: ${{ inputs.composer-cache }}
         MEC_CACHE_ID: magento${{ inputs.magento-version }}
       run: node "$GITHUB_ACTION_PATH/../src/cli.js" prepare
 
     - name: Locate Composer cache
-      if: ${{ steps.prepared.outputs.cache != 'true' }}
+      if: ${{ steps.prepared.outputs.cache != 'true' && inputs.composer-cache != 'none' }}
       id: composer-cache
       shell: bash
       run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
 
     - name: Cache Composer downloads
-      if: ${{ steps.prepared.outputs.cache != 'true' }}
+      if: ${{ steps.prepared.outputs.cache != 'true' && inputs.composer-cache != 'none' }}
       uses: actions/cache@v6
       with:
         path: ${{ steps.composer-cache.outputs.dir }}

@@ -5,7 +5,7 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { ConfigError } = require('./errors');
-const { readConfig } = require('./config');
+const { readConfig, composerCacheMode } = require('./config');
 const { runChecks, writeStepSummary } = require('./run');
 const { detectPrepared } = require('./workdir');
 const { changedFiles } = require('./changed-files');
@@ -50,6 +50,7 @@ const commands = {
 
   async prepare() {
     const env = process.env;
+    composerCacheMode(env.MEC_COMPOSER_CACHE);
     const phpRuntime = toolVersion('php', ['-r', 'echo PHP_VERSION;'], 'PHP');
     toolVersion('composer', ['--version', '--no-ansi'], 'Composer');
     const prepared = detectPrepared({ work: env.MEC_WORK_DIR, job: job(env), cacheId: env.MEC_CACHE_ID });

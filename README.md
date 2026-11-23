@@ -376,7 +376,7 @@ Every sub-action can also be its own job, which gives one row per check and comb
 
 These are the inputs of the root action. Each sub-action takes the subset that applies to it, with shorter names where there is no ambiguity (`config`, `severity`, `scope`, `level`, `baseline`); see its `action.yml`.
 
-The static action takes `php-version`, `checks`, `path`, `phpcs-config`, `phpcs-severity`, `phpcs-scope`, `annotations` and `github-token` with the same meaning.
+The static action takes `php-version`, `checks`, `path`, `phpcs-config`, `phpcs-severity`, `phpcs-scope`, `annotations`, `composer-cache` and `github-token` with the same meaning.
 
 | Input | Default | Meaning |
 |---|---|---|
@@ -394,6 +394,7 @@ The static action takes `php-version`, `checks`, `path`, `phpcs-config`, `phpcs-
 | `phpstan-level` | `1` | Level of the default PHPStan configuration |
 | `phpunit-testdox` | `false` | Print every test name as a readable sentence (PHPUnit `--testdox`); `testdox` in the `phpunit` action |
 | `composer-repositories` | empty | JSON list replacing the public Magento mirror as the source of dependencies; see Private Composer repositories |
+| `composer-cache` | `actions` | `actions` caches Composer downloads with `actions/cache`; `none` leaves them to the runner, such as a self-hosted runner with a persistent `COMPOSER_CACHE_DIR` |
 
 
 ## Configuration
