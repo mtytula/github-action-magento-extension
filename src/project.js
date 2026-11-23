@@ -20,13 +20,15 @@ function withoutExtension(repository, extensionName) {
  * Makes the checkout the first and only source of the extension in the Magento project.
  *
  * @param {Array<Object>} repositories where everything else comes from, in Composer's format
+ * @param {string} version the version the checkout is installed as; empty lets Composer guess
  */
-function withExtension(project, extensionPath, extensionName, repositories) {
+function withExtension(project, extensionPath, extensionName, repositories, version = '') {
+  // Copied, not symlinked: Magento refuses to deploy view files that resolve outside its root.
+  const options = version ? { symlink: false, versions: { [extensionName]: version } } : { symlink: false };
   return {
     ...project,
     repositories: [
-      // Copied, not symlinked: Magento refuses to deploy view files that resolve outside its root.
-      { type: 'path', url: extensionPath, options: { symlink: false } },
+      { type: 'path', url: extensionPath, options },
       ...repositories.map((repository) => withoutExtension(repository, extensionName)),
     ],
     require: { ...(project.require || {}), [extensionName]: '*@dev' },

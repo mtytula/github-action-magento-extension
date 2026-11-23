@@ -384,6 +384,7 @@ The static action takes `php-version`, `checks`, `path`, `phpcs-config`, `phpcs-
 | `magento-version` | empty | Exact release, such as `2.4.8-p5`; empty runs static checks only |
 | `checks` | `default` | Comma-separated list; `default` is every check the inputs allow |
 | `path` | `.` | Directory with the extension's `composer.json` |
+| `package-version` | empty | Version the checkout is installed as: empty, `tag` or an exact version such as `1.4.0`; see Package version |
 | `phpcs-config` | empty | Path to a PHPCS ruleset; see Configuration |
 | `phpcs-severity` | empty | Findings at or above this severity fail `phpcs`; see Configuration |
 | `phpstan-config` | empty | Path to a PHPStan configuration; see Configuration |
@@ -415,6 +416,16 @@ With the default ruleset `phpcs` fails at severity 10 and reports the rest as wa
 A repository PHPStan configuration brings its baseline through its own `includes:`. Without a configuration, `phpstan-baseline` loads a baseline on top of the default.
 
 `phpstan-includes` adds files to the default configuration, after the baseline. Use it to share rules or parameters across repositories without giving up the default, which knows where the Magento extension for PHPStan is installed. The level is always `phpstan-level`: the default configuration sets it and overrides a level from an included file. The input fails the check when a repository or configured PHPStan configuration is used.
+
+## Package version
+
+Composer installs the checkout from a `path` repository and, without a version in `composer.json`, guesses a `dev-` version from the branch. A dependency that requires the extension at a constraint such as `^1.0` then cannot be resolved. `package-version` installs the checkout as that version: an exact version such as `1.4.0`, or `tag` for the nearest tag reachable from the checkout, without a leading `v`. `tag` needs the history and tags of the checkout:
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0
+```
 
 ## Private Composer repositories
 

@@ -12,6 +12,13 @@ inputs:
       on the PATH is another version. Empty accepts whatever PHP the job has.
     required: false
     default: ''
+  package-version:
+    description: >-
+      Version the checkout is installed as. Empty lets Composer pick a `dev-` version; `tag` uses
+      the nearest tag reachable from the checkout (needs `fetch-depth: 0` in `actions/checkout`); or an exact version such as `1.4.0`. Set it when a dependency requires
+      the extension at a version constraint.
+    required: false
+    default: ''
   path:
     description: 'Directory in the workspace that holds the extension (its `composer.json`).'
     required: false
@@ -80,6 +87,7 @@ runs:
         MEC_PHPCS_CONFIG: ''
         MEC_PHPSTAN_LEVEL: '1'
         MEC_PHPSTAN_SCOPE: 'all'
+        MEC_PACKAGE_VERSION: ${{ inputs.package-version }}
         MEC_PHPSTAN_CONFIG: ''
         MEC_PHPSTAN_BASELINE: ''
         MEC_ANNOTATIONS: 'false'

@@ -39,6 +39,14 @@ test('phpstan-includes is a list split on commas or new lines', () => {
   assert.deepEqual(readConfig({ ...env, MEC_PHPSTAN_INCLUDES: 'a.neon, b.neon\n\n c.neon\n' }).phpstan.includes, ['a.neon', 'b.neon', 'c.neon']);
 });
 
+test('package-version is empty, tag or a version', () => {
+  const { env } = workspace();
+  assert.equal(readConfig(env).packageVersion, '');
+  assert.equal(readConfig({ ...env, MEC_PACKAGE_VERSION: 'tag' }).packageVersion, 'tag');
+  assert.equal(readConfig({ ...env, MEC_PACKAGE_VERSION: '1.4.0-beta.1' }).packageVersion, '1.4.0-beta.1');
+  assert.throws(() => readConfig({ ...env, MEC_PACKAGE_VERSION: 'latest' }), /package-version must be empty, tag or a version such as 1\.4\.0\./);
+});
+
 test('label without a Magento release names PHP only', () => {
   const { env } = workspace();
   assert.equal(readConfig({ ...env, MEC_MAGENTO_VERSION: '', MEC_CHECKS: 'validate' }).label, 'PHP 8.4');
