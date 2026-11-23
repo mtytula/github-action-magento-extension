@@ -9,6 +9,7 @@ const { readConfig } = require('./config');
 const { runChecks, writeStepSummary } = require('./run');
 const { detectPrepared } = require('./workdir');
 const { changedFiles } = require('./changed-files');
+const { changedLines, runGit } = require('./changed-lines');
 
 function output(values) {
   if (process.env.GITHUB_OUTPUT) {
@@ -60,20 +61,27 @@ const commands = {
   async 'changed-files'() {
     const env = process.env;
     const target = path.join(env.MEC_WORK_DIR, 'changed-files.txt');
+    const linesTarget = path.join(env.MEC_WORK_DIR, 'changed-lines.json');
     fs.mkdirSync(env.MEC_WORK_DIR, { recursive: true });
     fs.rmSync(target, { force: true });
+    fs.rmSync(linesTarget, { force: true });
     let event = {};
     try {
       event = JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
     } catch {
       event = {};
     }
-    const files = await changedFiles({
+    const source = {
       event,
       repository: env.GITHUB_REPOSITORY,
       api: (env.GITHUB_API_URL || 'https://api.github.com').replace(/\/+$/, ''),
       token: env.MEC_TOKEN,
-    });
+    };
+    const lines = await changedLines({ ...source, git: runGit(env.GITHUB_WORKSPACE || '.') });
+    if (lines !== null) {
+      fs.writeFileSync(linesTarget, JSON.stringify(lines));
+    }
+    const files = await changedFiles(source);
     if (files === null) {
       console.log('Changed files are not known; checks that depend on them cover every file.');
       return 0;
