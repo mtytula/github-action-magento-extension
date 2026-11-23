@@ -392,6 +392,7 @@ The static action takes `php-version`, `checks`, `path`, `phpcs-config`, `phpcs-
 | `annotations` | `true` | Show PHPCS and PHPStan findings inline in the pull request diff |
 | `github-token` | `github.token` | Only reads the list of changed files |
 | `phpstan-level` | `1` | Level of the default PHPStan configuration |
+| `phpstan-scope` | `all` | `all` fails on any PHPStan finding, `changed` only on findings in files the pull request or push touched, `lines` only on findings in the changed lines (needs `fetch-depth: 2` on pull requests for exact lines, otherwise the API diff is used); general errors always fail |
 | `phpunit-testdox` | `false` | Print every test name as a readable sentence (PHPUnit `--testdox`); `testdox` in the `phpunit` action |
 | `composer-repositories` | empty | JSON list replacing the public Magento mirror as the source of dependencies; see Private Composer repositories |
 
@@ -462,7 +463,7 @@ The summary of every check names the version it ran and where it came from.
 
 ## Inline findings
 
-PHPCS and PHPStan findings appear as annotations on the affected lines in the pull request's "Files changed" tab. PHPStan analyses the whole extension, but only findings in changed files are annotated. GitHub keeps 10 errors and 10 warnings per step, so findings in changed files are listed first; the complete list is in the job log and in `result-path`.
+PHPCS and PHPStan findings appear as annotations on the affected lines in the pull request's "Files changed" tab. PHPStan analyses the whole extension, but only findings in changed files are annotated. With `phpcs-scope` or `phpstan-scope` set to `lines`, only findings on the changed lines are annotated. GitHub keeps 10 errors and 10 warnings per step, so findings in changed files are listed first; the complete list is in the job log and in `result-path`.
 
 When the same check runs in several matrix jobs, switch `annotations` off in all but one, or every finding appears once per job:
 
@@ -489,6 +490,7 @@ annotations: ${{ strategy.job-index == 0 }}
 - The extension's own `phpunit.xml`, `require-dev` and `autoload-dev` are not honoured yet.
 - Each job installs Magento once, which costs 30 to 45 seconds.
 - No pull-request comment.
+- With `phpstan-scope` set to `changed` or `lines`, an error that a change causes in unchanged code (for example a call to a method whose signature changed) does not fail the check.
 
 ## Releases
 

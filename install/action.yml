@@ -71,6 +71,7 @@ runs:
         MEC_PHPCS_SCOPE: changed
         MEC_PHPCS_CONFIG: ''
         MEC_PHPSTAN_LEVEL: '1'
+        MEC_PHPSTAN_SCOPE: 'all'
         MEC_PHPSTAN_CONFIG: ''
         MEC_PHPSTAN_BASELINE: ''
         MEC_ANNOTATIONS: 'false'

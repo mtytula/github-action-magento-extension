@@ -31,6 +31,15 @@ inputs:
     description: 'PHPStan rule level of the default configuration.'
     required: false
     default: '1'
+  scope:
+    description: >-
+      `all` fails on any finding in the extension; `changed` fails only on findings in the files
+      touched by the pull request or push; `lines` only on findings in the changed lines. General
+      errors always fail. Steps down to `changed`, then `all`, when the changed lines or files
+      cannot be determined. For exact lines of a pull request check out with `fetch-depth: 2`;
+      otherwise the lines come from the GitHub API diff.
+    required: false
+    default: 'all'
   annotations:
     description: >-
       Show findings inline on the changed lines of a pull request. Set to `false` in all but one
@@ -103,6 +112,7 @@ runs:
         MEC_PHPCS_SCOPE: changed
         MEC_PHPCS_CONFIG: ''
         MEC_PHPSTAN_LEVEL: ${{ inputs.level }}
+        MEC_PHPSTAN_SCOPE: ${{ inputs.scope }}
         MEC_PHPSTAN_CONFIG: ${{ inputs.config }}
         MEC_PHPSTAN_BASELINE: ${{ inputs.baseline }}
         MEC_ANNOTATIONS: ${{ inputs.annotations }}

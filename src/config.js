@@ -96,6 +96,7 @@ function readConfig(env, { phpRuntime = '' } = {}) {
     },
     phpstan: {
       level: requireMatch(value('MEC_PHPSTAN_LEVEL', '1'), /^([0-9]|10|max)$/, 'phpstan-level must be 0-10 or max.'),
+      scope: requireMatch(value('MEC_PHPSTAN_SCOPE', 'all'), /^(all|changed|lines)$/, 'phpstan-scope must be all, changed or lines.'),
       config: value('MEC_PHPSTAN_CONFIG'),
       baseline: value('MEC_PHPSTAN_BASELINE'),
     },

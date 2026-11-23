@@ -6,6 +6,7 @@ const { CheckFailed } = require('../errors');
 const { toolPackages, readComposer, installTools } = require('../tools');
 const { phpstanTotals, firstVersion } = require('../reports');
 const { resolveToolConfig, workspaceFile } = require('./tool-config');
+const { scopeFilter } = require('../scope');
 
 function defaultConfiguration({ extensionNeon, baseline, level, work, extension }) {
   return [
@@ -117,7 +118,24 @@ async function phpstan(ctx) {
   if (totals.lines.length > 0) {
     ctx.log(totals.lines.join('\n'));
   }
-  return { status: run.code === 0 ? 'passed' : 'failed', note: `${label}; ${versions} (${tools.toolsLabel}); ${totals.count} finding(s)` };
+  return phpstanOutcome(parsed, run.code, ctx, config.phpstan.scope, `${label}; ${versions} (${tools.toolsLabel})`);
 }
 
-module.exports = { phpstan, defaultConfiguration };
+/**
+ * Status and note of PHPStan. With scope `all` the exit code decides; otherwise the findings in
+ * the changed files or lines, and general errors, do.
+ */
+function phpstanOutcome(report, code, ctx, scope, summary) {
+  const filter = scopeFilter(ctx, scope);
+  const totals = phpstanTotals(report, filter.keep);
+  const note = `${filter.prefix}${summary}; ${totals.count} finding(s)`;
+  if (filter.scope === 'all') {
+    return { status: code === 0 ? 'passed' : 'failed', note };
+  }
+  const where = filter.scope === 'lines' ? 'on changed lines' : 'in changed files';
+  // An exit code without any finding means PHPStan itself failed.
+  const failed = totals.failing > 0 || (totals.count === 0 && code !== 0);
+  return { status: failed ? 'failed' : 'passed', note: `${note}, ${totals.failing} ${where}` };
+}
+
+module.exports = { phpstan, phpstanOutcome, defaultConfiguration };

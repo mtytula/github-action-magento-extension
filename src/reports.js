@@ -39,19 +39,25 @@ function phpcsTotals(report, threshold, keep = () => true) {
 }
 
 /**
- * @returns {?{count: number, lines: string[]}} null when PHPStan could not load its configuration
+ * `failing` counts the file findings `keep(file, line)` accepts plus every general error.
+ *
+ * @returns {?{count: number, failing: number, lines: string[]}} null when PHPStan could not load its configuration
  */
-function phpstanTotals(report) {
+function phpstanTotals(report, keep = () => true) {
   if (!report || typeof report !== 'object' || !report.totals) {
     return null;
   }
   const lines = [...(report.errors || []).map(String)];
+  let failing = Number(report.totals.errors || 0);
   for (const [file, entry] of Object.entries(report.files || {})) {
     for (const message of entry.messages || []) {
       lines.push(`${file}:${message.line ?? '?'}  ${message.message}`);
+      if (keep(file, Number(message.line || 1))) {
+        failing += 1;
+      }
     }
   }
-  return { count: Number(report.totals.file_errors || 0) + Number(report.totals.errors || 0), lines };
+  return { count: Number(report.totals.file_errors || 0) + Number(report.totals.errors || 0), failing, lines };
 }
 
 function firstVersion(text) {

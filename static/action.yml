@@ -129,6 +129,7 @@ runs:
         MEC_PHPCS_SCOPE: ${{ inputs.phpcs-scope }}
         MEC_PHPCS_CONFIG: ${{ inputs.phpcs-config }}
         MEC_PHPSTAN_LEVEL: '1'
+        MEC_PHPSTAN_SCOPE: 'all'
         MEC_PHPSTAN_CONFIG: ''
         MEC_PHPSTAN_BASELINE: ''
         MEC_ANNOTATIONS: ${{ inputs.annotations }}

@@ -71,6 +71,15 @@ inputs:
     description: 'PHPStan rule level of the default configuration.'
     required: false
     default: '1'
+  phpstan-scope:
+    description: >-
+      `all` fails on any finding in the extension; `changed` fails only on findings in the files
+      touched by the pull request or push; `lines` only on findings in the changed lines. General
+      errors always fail. Steps down to `changed`, then `all`, when the changed lines or files
+      cannot be determined. For exact lines of a pull request check out with `fetch-depth: 2`;
+      otherwise the lines come from the GitHub API diff.
+    required: false
+    default: 'all'
   phpunit-testdox:
     description: 'Print the name of every test as a readable sentence (PHPUnit `--testdox`).'
     required: false
@@ -118,7 +127,7 @@ runs:
           magento-extension-check-${{ runner.os }}-php${{ steps.prepared.outputs.php-version }}-magento${{ inputs.magento-version || 'none' }}-
 
     - name: List changed files
-      if: ${{ inputs.phpcs-scope != 'all' || inputs.annotations == 'true' }}
+      if: ${{ inputs.phpcs-scope != 'all' || inputs.phpstan-scope != 'all' || inputs.annotations == 'true' }}
       shell: bash
       env:
         MEC_TOKEN: ${{ inputs.github-token }}
@@ -136,6 +145,7 @@ runs:
         MEC_COMPOSER_REPOSITORIES: ${{ inputs.composer-repositories }}
         MEC_PHPCS_SEVERITY: ${{ inputs.phpcs-severity }}
         MEC_PHPSTAN_LEVEL: ${{ inputs.phpstan-level }}
+        MEC_PHPSTAN_SCOPE: ${{ inputs.phpstan-scope }}
         MEC_PHPCS_SCOPE: ${{ inputs.phpcs-scope }}
         MEC_PHPCS_CONFIG: ${{ inputs.phpcs-config }}
         MEC_PHPSTAN_CONFIG: ${{ inputs.phpstan-config }}
