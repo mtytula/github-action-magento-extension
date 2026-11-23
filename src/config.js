@@ -98,6 +98,7 @@ function readConfig(env, { phpRuntime = '' } = {}) {
       level: requireMatch(value('MEC_PHPSTAN_LEVEL', '1'), /^([0-9]|10|max)$/, 'phpstan-level must be 0-10 or max.'),
       config: value('MEC_PHPSTAN_CONFIG'),
       baseline: value('MEC_PHPSTAN_BASELINE'),
+      includes: value('MEC_PHPSTAN_INCLUDES').split(/[,\n]/).map((item) => item.trim()).filter(Boolean),
     },
     annotations: requireMatch(value('MEC_ANNOTATIONS', 'true'), /^(true|false)$/, 'annotations must be true or false.') === 'true',
     testdox: requireMatch(value('MEC_PHPUNIT_TESTDOX', 'false'), /^(true|false)$/, 'testdox must be true or false.') === 'true',

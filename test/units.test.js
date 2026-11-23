@@ -14,7 +14,7 @@ const { recordCheck, overallStatus } = require('../src/results');
 const { mirrorDirectory, differences } = require('../src/copy');
 const { unitConfiguration, runPhpunit } = require('../src/checks/phpunit');
 const { CheckFailed } = require('../src/errors');
-const { defaultConfiguration } = require('../src/checks/phpstan');
+const { defaultConfiguration, resolveIncludes } = require('../src/checks/phpstan');
 const { resolveToolConfig } = require('../src/checks/tool-config');
 const { validate } = require('../src/checks/static');
 const { workspace } = require('./helpers');
@@ -236,6 +236,18 @@ test('generated PHPUnit and PHPStan configurations', () => {
   const neon = defaultConfiguration({ extensionNeon: '/t/extension.neon', baseline: '/w/baseline.neon', level: '5', work: '/work', extension: '/w' });
   assert.match(neon, /includes:\n {4}- \/t\/extension\.neon\n {4}- \/w\/baseline\.neon\nparameters:\n {4}level: 5\n/);
   assert.doesNotMatch(defaultConfiguration({ extensionNeon: '/t/e.neon', baseline: null, level: '1', work: '/work', extension: '/w' }), /baseline/);
+  const shared = defaultConfiguration({ extensionNeon: '/t/ext.neon', baseline: '/w/b.neon', includes: ['/w/ci/shared.neon'], level: 'max', work: '/wk', extension: '/w/ext' });
+  assert.match(shared, /includes:\n {4}- \/t\/ext\.neon\n {4}- \/w\/b\.neon\n {4}- \/w\/ci\/shared\.neon\nparameters:\n {4}level: max\n/);
+});
+
+test('phpstan includes must be workspace files and extend only the default configuration', () => {
+  const { extension } = workspace({ 'ci/a.neon': 'parameters: {}', 'ci/b.neon': 'parameters: {}' });
+  const config = { workspace: extension, phpstan: { includes: ['ci/a.neon', 'ci/b.neon'] } };
+  assert.deepEqual(resolveIncludes(config, null), { files: [path.join(extension, 'ci/a.neon'), path.join(extension, 'ci/b.neon')], label: ' + includes ci/a.neon, ci/b.neon' });
+  assert.deepEqual(resolveIncludes({ ...config, phpstan: { includes: [] } }, 'repository phpstan.neon'), { files: [], label: '' });
+  assert.throws(() => resolveIncludes({ ...config, phpstan: { includes: ['ci/x.neon'] } }, null), /include 'ci\/x\.neon' does not exist in the workspace/);
+  assert.throws(() => resolveIncludes(config, 'repository phpstan.neon'),
+    /phpstan includes extend the default configuration, but repository phpstan\.neon is used/);
 });
 
 test('tool configuration: input, then repository file, then default', () => {
