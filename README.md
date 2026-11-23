@@ -374,7 +374,7 @@ Every sub-action can also be its own job, which gives one row per check and comb
 
 ## Inputs
 
-These are the inputs of the root action. Each sub-action takes the subset that applies to it, with shorter names where there is no ambiguity (`config`, `severity`, `scope`, `level`, `baseline`); see its `action.yml`.
+These are the inputs of the root action. Each sub-action takes the subset that applies to it, with shorter names where there is no ambiguity (`config`, `severity`, `scope`, `level`, `baseline`, `includes`); see its `action.yml`.
 
 The static action takes `php-version`, `checks`, `path`, `phpcs-config`, `phpcs-severity`, `phpcs-scope`, `annotations` and `github-token` with the same meaning.
 
@@ -389,6 +389,7 @@ The static action takes `php-version`, `checks`, `path`, `phpcs-config`, `phpcs-
 | `phpstan-config` | empty | Path to a PHPStan configuration; see Configuration |
 | `phpstan-baseline` | empty | Baseline loaded on top of the default PHPStan configuration |
 | `phpcs-scope` | `changed` | `changed` checks files touched by the pull request or push, `all` checks every file, `lines` checks the changed files but fails only on findings in the lines the pull request or push changed (needs `fetch-depth: 2` on pull requests for exact lines, otherwise the API diff is used) |
+| `phpstan-includes` | empty | Files included in the default PHPStan configuration, separated by commas or new lines; see Configuration |
 | `annotations` | `true` | Show PHPCS and PHPStan findings inline in the pull request diff |
 | `github-token` | `github.token` | Only reads the list of changed files |
 | `phpstan-level` | `1` | Level of the default PHPStan configuration |
@@ -412,6 +413,8 @@ A path given by input that does not exist fails the check. The job summary names
 With the default ruleset `phpcs` fails at severity 10 and reports the rest as warnings. With a repository ruleset it fails on what that ruleset reports as errors. `phpcs-severity` overrides both.
 
 A repository PHPStan configuration brings its baseline through its own `includes:`. Without a configuration, `phpstan-baseline` loads a baseline on top of the default.
+
+`phpstan-includes` adds files to the default configuration, after the baseline. Use it to share rules or parameters across repositories without giving up the default, which knows where the Magento extension for PHPStan is installed. The level is always `phpstan-level`: the default configuration sets it and overrides a level from an included file. The input fails the check when a repository or configured PHPStan configuration is used.
 
 ## Private Composer repositories
 

@@ -8,11 +8,12 @@ const { phpstanTotals, firstVersion } = require('../reports');
 const { resolveToolConfig, workspaceFile } = require('./tool-config');
 const { scopeFilter } = require('../scope');
 
-function defaultConfiguration({ extensionNeon, baseline, level, work, extension }) {
+function defaultConfiguration({ extensionNeon, baseline, includes = [], level, work, extension }) {
   return [
     'includes:',
     `    - ${extensionNeon}`,
     ...(baseline ? [`    - ${baseline}`] : []),
+    ...includes.map((file) => `    - ${file}`),
     'parameters:',
     `    level: ${level}`,
     `    tmpDir: ${work}/phpstan-tmp`,
@@ -23,6 +24,30 @@ function defaultConfiguration({ extensionNeon, baseline, level, work, extension 
     `            - ${extension}/vendor/* (?)`,
     '',
   ].join('\n');
+}
+
+/**
+ * Files of the `phpstan-includes` input, which extend only the default configuration.
+ *
+ * @param {?string} usedConfiguration label of a repository or configured file in use, null for the default
+ * @returns {{files: string[], label: string}}
+ */
+function resolveIncludes(config, usedConfiguration) {
+  const requested = config.phpstan.includes || [];
+  if (requested.length === 0) {
+    return { files: [], label: '' };
+  }
+  if (usedConfiguration) {
+    throw new CheckFailed(`phpstan includes extend the default configuration, but ${usedConfiguration} is used`);
+  }
+  const files = requested.map((item) => {
+    const file = workspaceFile(config.workspace, item);
+    if (!file) {
+      throw new CheckFailed(`include '${item}' does not exist in the workspace`);
+    }
+    return file;
+  });
+  return { files, label: ` + includes ${requested.join(', ')}` };
 }
 
 function analyse(ctx, binary, configuration, options) {
@@ -52,6 +77,7 @@ async function phpstan(ctx) {
   const resolved = resolveToolConfig(ctx, config.phpstan.config, ['phpstan.neon', 'phpstan.neon.dist', 'phpstan.dist.neon']);
   let configuration = resolved.file;
   let label = resolved.label;
+  const includes = resolveIncludes(config, configuration ? label : null);
 
   // Order of preference: the versions the extension asks for, then PHPStan as the Magento release
   // under test resolves it (with the Magento extension that fits that PHPStan), then current releases.
@@ -96,9 +122,9 @@ async function phpstan(ctx) {
     }
     configuration = path.join(config.work, 'phpstan.neon');
     fs.writeFileSync(configuration, defaultConfiguration({
-      extensionNeon: tools.extensionNeon, baseline, level: config.phpstan.level, work: config.work, extension: config.extension,
+      extensionNeon: tools.extensionNeon, baseline, includes: includes.files, level: config.phpstan.level, work: config.work, extension: config.extension,
     }));
-    label += `, level ${config.phpstan.level}`;
+    label += `${includes.label}, level ${config.phpstan.level}`;
   }
 
   const report = path.join(config.results, 'phpstan.json');
@@ -138,4 +164,4 @@ function phpstanOutcome(report, code, ctx, scope, summary) {
   return { status: failed ? 'failed' : 'passed', note: `${note}, ${totals.failing} ${where}` };
 }
 
-module.exports = { phpstan, phpstanOutcome, defaultConfiguration };
+module.exports = { phpstan, phpstanOutcome, defaultConfiguration, resolveIncludes };

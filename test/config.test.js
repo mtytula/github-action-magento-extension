@@ -33,6 +33,12 @@ test('phpstan-scope defaults to all and accepts changed and lines', () => {
   assert.throws(() => readConfig({ ...env, MEC_PHPSTAN_SCOPE: 'x' }), /phpstan-scope must be all, changed or lines\./);
 });
 
+test('phpstan-includes is a list split on commas or new lines', () => {
+  const { env } = workspace();
+  assert.deepEqual(readConfig(env).phpstan.includes, []);
+  assert.deepEqual(readConfig({ ...env, MEC_PHPSTAN_INCLUDES: 'a.neon, b.neon\n\n c.neon\n' }).phpstan.includes, ['a.neon', 'b.neon', 'c.neon']);
+});
+
 test('label without a Magento release names PHP only', () => {
   const { env } = workspace();
   assert.equal(readConfig({ ...env, MEC_MAGENTO_VERSION: '', MEC_CHECKS: 'validate' }).label, 'PHP 8.4');

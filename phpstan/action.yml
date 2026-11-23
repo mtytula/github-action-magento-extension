@@ -27,6 +27,13 @@ inputs:
     description: 'Path in the workspace to a PHPStan baseline, loaded on top of the default configuration.'
     required: false
     default: ''
+  includes:
+    description: >-
+      Paths in the workspace to PHPStan configuration files, separated by commas or new lines,
+      included in the default configuration after the baseline. Not allowed together with a
+      repository or configured PHPStan configuration.
+    required: false
+    default: ''
   level:
     description: 'PHPStan rule level of the default configuration.'
     required: false
@@ -115,6 +122,7 @@ runs:
         MEC_PHPSTAN_SCOPE: ${{ inputs.scope }}
         MEC_PHPSTAN_CONFIG: ${{ inputs.config }}
         MEC_PHPSTAN_BASELINE: ${{ inputs.baseline }}
+        MEC_PHPSTAN_INCLUDES: ${{ inputs.includes }}
         MEC_ANNOTATIONS: ${{ inputs.annotations }}
         MEC_WORK_DIR: ${{ runner.temp }}/magento-extension-check
       run: node "$GITHUB_ACTION_PATH/../src/cli.js" run

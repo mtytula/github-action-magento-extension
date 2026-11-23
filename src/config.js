@@ -99,6 +99,7 @@ function readConfig(env, { phpRuntime = '' } = {}) {
       scope: requireMatch(value('MEC_PHPSTAN_SCOPE', 'all'), /^(all|changed|lines)$/, 'phpstan-scope must be all, changed or lines.'),
       config: value('MEC_PHPSTAN_CONFIG'),
       baseline: value('MEC_PHPSTAN_BASELINE'),
+      includes: value('MEC_PHPSTAN_INCLUDES').split(/[,\n]/).map((item) => item.trim()).filter(Boolean),
     },
     annotations: requireMatch(value('MEC_ANNOTATIONS', 'true'), /^(true|false)$/, 'annotations must be true or false.') === 'true',
     testdox: requireMatch(value('MEC_PHPUNIT_TESTDOX', 'false'), /^(true|false)$/, 'testdox must be true or false.') === 'true',

@@ -49,6 +49,13 @@ inputs:
     description: 'Path in the workspace to a PHPStan baseline, loaded on top of the default configuration.'
     required: false
     default: ''
+  phpstan-includes:
+    description: >-
+      Paths in the workspace to PHPStan configuration files, separated by commas or new lines,
+      included in the default configuration after the baseline. Not allowed together with a
+      repository or configured PHPStan configuration.
+    required: false
+    default: ''
   phpcs-scope:
     description: >-
       `changed` checks only the PHP files touched by the pull request or push; `all` checks every
@@ -150,6 +157,7 @@ runs:
         MEC_PHPCS_CONFIG: ${{ inputs.phpcs-config }}
         MEC_PHPSTAN_CONFIG: ${{ inputs.phpstan-config }}
         MEC_PHPSTAN_BASELINE: ${{ inputs.phpstan-baseline }}
+        MEC_PHPSTAN_INCLUDES: ${{ inputs.phpstan-includes }}
         MEC_ANNOTATIONS: ${{ inputs.annotations }}
         MEC_PHPUNIT_TESTDOX: ${{ inputs.phpunit-testdox }}
         MEC_WORK_DIR: ${{ runner.temp }}/magento-extension-check
