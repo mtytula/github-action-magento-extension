@@ -42,6 +42,11 @@ function requireMatch(value, pattern, message) {
   return value;
 }
 
+/** The `composer-cache` input: `actions` caches downloads with actions/cache, `none` leaves them to the runner. */
+function composerCacheMode(value) {
+  return requireMatch(value === undefined || value === '' ? 'actions' : value, /^(actions|none)$/, 'composer-cache must be actions or none.');
+}
+
 /**
  * Reads and validates the inputs the action passes as MEC_* environment variables.
  */
@@ -133,4 +138,4 @@ function readConfig(env, { phpRuntime = '' } = {}) {
   return config;
 }
 
-module.exports = { readConfig, parseRepositories, PACKAGE_NAME };
+module.exports = { readConfig, parseRepositories, composerCacheMode, PACKAGE_NAME };
