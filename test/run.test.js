@@ -118,6 +118,26 @@ test('PHPCS findings become inline annotations when asked', async () => {
   assert.doesNotMatch(hidden.output, /file=Model/);
 });
 
+test('with phpcs-scope lines only findings on changed lines are annotated', async () => {
+  const { env, extension } = workspace();
+  fs.mkdirSync(env.MEC_WORK_DIR, { recursive: true });
+  fs.writeFileSync(path.join(env.MEC_WORK_DIR, 'changed-files.txt'), 'Model/Demo.php\n');
+  fs.writeFileSync(path.join(env.MEC_WORK_DIR, 'changed-lines.json'), JSON.stringify({ 'Model/Demo.php': [[3, 3]] }));
+  const phpcs = async (ctx) => {
+    fs.writeFileSync(path.join(ctx.config.results, 'phpcs.threshold'), '10');
+    fs.writeFileSync(path.join(ctx.config.results, 'phpcs.json'), JSON.stringify({
+      files: { [path.join(extension, 'Model/Demo.php')]: { messages: [
+        { type: 'ERROR', severity: 10, line: 3, source: 'X', message: 'changed' },
+        { type: 'ERROR', severity: 10, line: 1, source: 'X', message: 'untouched' },
+      ] } },
+    }));
+    return { status: 'failed', note: '' };
+  };
+  const result = await step({ ...env, MEC_PHPCS_SCOPE: 'lines' }, 'phpcs', { phpcs });
+  assert.match(result.output, /::error file=Model\/Demo\.php,line=3,/);
+  assert.doesNotMatch(result.output, /untouched/);
+});
+
 test('the step summary lists only the checks of this step', async () => {
   const { env, root } = workspace();
   const implementations = { validate: pass('fine'), lint: async () => { throw new CheckFailed('2 files broken'); } };

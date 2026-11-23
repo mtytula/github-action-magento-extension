@@ -30,7 +30,9 @@ inputs:
     required: false
     default: ''
   scope:
-    description: '`changed` checks only the PHP files touched by the pull request or push; `all` checks every file.'
+    description: >-
+      `changed` checks only the PHP files touched by the pull request or push; `all` checks every
+      file; `lines` checks the changed files but fails only on findings in the changed lines.
     required: false
     default: 'changed'
   annotations:

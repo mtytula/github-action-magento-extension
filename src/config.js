@@ -91,7 +91,7 @@ function readConfig(env, { phpRuntime = '' } = {}) {
     customRepositories: value('MEC_COMPOSER_REPOSITORIES', value('MAGENTO_EXTENSION_CHECK_COMPOSER_REPOSITORIES')).trim() !== '',
     phpcs: {
       severity: requireMatch(value('MEC_PHPCS_SEVERITY'), /^[0-9]*$/, 'phpcs-severity must be a whole number.'),
-      scope: requireMatch(value('MEC_PHPCS_SCOPE', 'changed'), /^(changed|all)$/, 'phpcs-scope must be changed or all.'),
+      scope: requireMatch(value('MEC_PHPCS_SCOPE', 'changed'), /^(changed|all|lines)$/, 'phpcs-scope must be changed, all or lines.'),
       config: value('MEC_PHPCS_CONFIG'),
     },
     phpstan: {

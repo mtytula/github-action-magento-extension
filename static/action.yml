@@ -39,7 +39,9 @@ inputs:
   phpcs-scope:
     description: >-
       `changed` checks only the PHP files touched by the pull request or push; `all` checks every
-      file. Falls back to every file when the changed files cannot be determined.
+      file; `lines` checks the changed files but fails only on findings in the changed lines. Falls
+      back to every file when the changed files cannot be determined. For exact lines of a pull
+      request check out with `fetch-depth: 2`; otherwise the lines come from the GitHub API diff.
     required: false
     default: 'changed'
   annotations:
@@ -107,7 +109,7 @@ runs:
           magento-extension-check-static-${{ runner.os }}-php${{ steps.prepared.outputs.php-version }}-
 
     - name: List changed files
-      if: ${{ inputs.phpcs-scope == 'changed' || inputs.annotations == 'true' }}
+      if: ${{ inputs.phpcs-scope != 'all' || inputs.annotations == 'true' }}
       shell: bash
       env:
         MEC_TOKEN: ${{ inputs.github-token }}

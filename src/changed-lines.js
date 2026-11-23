@@ -26,8 +26,11 @@ function hunkRange(line) {
 function hunkRanges(diff) {
   const ranges = new Map();
   let current = null;
+  let previous = '';
   for (const line of String(diff).split('\n')) {
-    if (line.startsWith('+++ ')) {
+    const header = line.startsWith('+++ ') && previous.startsWith('--- ');
+    previous = line;
+    if (header) {
       const target = line.slice(4);
       current = target === '/dev/null' ? null : target.replace(/^b\//, '');
       if (current !== null && !ranges.has(current)) {
@@ -58,7 +61,7 @@ function patchRanges(patch) {
 /** Runs git; never throws. */
 function runGit(directory) {
   return (args) => new Promise((resolve) => {
-    execFile('git', ['-C', directory, ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }, (error, stdout) => {
+    execFile('git', ['-C', directory, '-c', 'core.quotePath=false', ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }, (error, stdout) => {
       resolve({ code: error ? (typeof error.code === 'number' ? error.code : 1) : 0, stdout: stdout || '' });
     });
   });
@@ -67,8 +70,11 @@ function runGit(directory) {
 async function linesFromGit(event, git) {
   let range = null;
   if (event && event.pull_request) {
-    // The checkout of a pull request is a merge commit; its first parent is the base branch.
-    if ((await git(['rev-parse', '--verify', '-q', 'HEAD^2'])).code === 0) {
+    // The checkout of a pull request is a merge commit of the base branch and the head of the pull
+    // request; a checkout of the head whose last commit merges the base branch is not.
+    const head = String((event.pull_request.head && event.pull_request.head.sha) || '');
+    const second = await git(['rev-parse', '--verify', '-q', 'HEAD^2']);
+    if (SHA.test(head) && second.code === 0 && second.stdout.trim() === head) {
       range = ['HEAD^1', 'HEAD'];
     }
   } else {
@@ -80,7 +86,7 @@ async function linesFromGit(event, git) {
   if (!range) {
     return null;
   }
-  const diff = await git(['diff', '--unified=0', '--no-color', '--no-ext-diff', '--relative', ...range]);
+  const diff = await git(['diff', '--unified=0', '--no-color', '--no-ext-diff', '--relative', '--src-prefix=a/', '--dst-prefix=b/', ...range]);
   return diff.code === 0 ? Object.fromEntries(hunkRanges(diff.stdout)) : null;
 }
 

@@ -2,13 +2,16 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { inScope } = require('./changed-lines');
 
 const property = (value) => String(value).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').replace(/:/g, '%3A').replace(/,/g, '%2C');
 const data = (value) => String(value).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 
-function repositoryPath(file, workspace, extension) {
+function repositoryPath(reported, workspace, extension) {
+  // PHPStan reports findings in a trait as `<file> (in context of class <name>)`.
+  const file = String(reported).replace(/ \(in context of .*\)$/, '');
   let real = file;
-  for (const candidate of [file, path.join(extension, String(file).replace(/^\/+/, ''))]) {
+  for (const candidate of [file, path.join(extension, file.replace(/^\/+/, ''))]) {
     try {
       real = fs.realpathSync(candidate);
       break;
@@ -60,13 +63,17 @@ function findingsFromReport(tool, report, { workspace, extension, threshold = '1
  * budget is shared between the checks of a step.
  *
  * @param {?Set<string>} changed repository paths changed by the pull request, or null when unknown
+ * @param {?Object} changedLines when given, only findings on these lines are shown
  * @returns {{lines: string[], budget: {error: number, warning: number}}}
  */
-function annotationLines(tool, findings, changed, budget) {
+function annotationLines(tool, findings, changed, budget, changedLines = null) {
   let shownFindings = findings;
+  if (changedLines) {
+    shownFindings = shownFindings.filter((finding) => inScope(changedLines, finding.file, finding.line));
+  }
   // PHPStan analyses the whole extension, but only findings in changed files belong in the diff.
   if (tool === 'phpstan' && changed) {
-    shownFindings = findings.filter((finding) => changed.has(finding.file));
+    shownFindings = shownFindings.filter((finding) => changed.has(finding.file));
   }
   const rank = (finding) => (changed && changed.has(finding.file) ? 0 : 2) + (finding.level === 'error' ? 0 : 1);
   const sorted = [...shownFindings].sort((a, b) => rank(a) - rank(b) || a.file.localeCompare(b.file) || a.line - b.line);
@@ -90,4 +97,4 @@ function annotationLines(tool, findings, changed, budget) {
   return { lines, budget: remaining };
 }
 
-module.exports = { findingsFromReport, annotationLines, property, data };
+module.exports = { findingsFromReport, annotationLines, repositoryPath, property, data };

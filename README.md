@@ -388,7 +388,7 @@ The static action takes `php-version`, `checks`, `path`, `phpcs-config`, `phpcs-
 | `phpcs-severity` | empty | Findings at or above this severity fail `phpcs`; see Configuration |
 | `phpstan-config` | empty | Path to a PHPStan configuration; see Configuration |
 | `phpstan-baseline` | empty | Baseline loaded on top of the default PHPStan configuration |
-| `phpcs-scope` | `changed` | `changed` checks files touched by the pull request or push, `all` checks every file |
+| `phpcs-scope` | `changed` | `changed` checks files touched by the pull request or push, `all` checks every file, `lines` checks the changed files but fails only on findings in the lines the pull request or push changed (needs `fetch-depth: 2` on pull requests for exact lines, otherwise the API diff is used) |
 | `annotations` | `true` | Show PHPCS and PHPStan findings inline in the pull request diff |
 | `github-token` | `github.token` | Only reads the list of changed files |
 | `phpstan-level` | `1` | Level of the default PHPStan configuration |

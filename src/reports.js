@@ -11,27 +11,31 @@ function junitTotals(xml) {
 }
 
 /**
- * Counts PHPCS messages that fail the check and the rest. `threshold` is a severity or `errors`.
+ * Counts PHPCS messages that fail the check and the rest. `threshold` is a severity or `errors`;
+ * `keep(file, line)` limits the failing messages, the ones it drops are counted as `outside`.
  *
- * @returns {?{failing: number, other: number}} null when the report is not a PHPCS report
+ * @returns {?{failing: number, other: number, outside: number}} null when the report is not a PHPCS report
  */
-function phpcsTotals(report, threshold) {
+function phpcsTotals(report, threshold, keep = () => true) {
   if (!report || typeof report !== 'object' || !report.files) {
     return null;
   }
   let failing = 0;
   let other = 0;
-  for (const file of Object.values(report.files)) {
+  let outside = 0;
+  for (const [name, file] of Object.entries(report.files)) {
     for (const message of file.messages || []) {
       const fails = threshold === 'errors' ? message.type === 'ERROR' : Number(message.severity) >= Number(threshold);
-      if (fails) {
+      if (!fails) {
+        other += 1;
+      } else if (keep(name, Number(message.line || 1))) {
         failing += 1;
       } else {
-        other += 1;
+        outside += 1;
       }
     }
   }
-  return { failing, other };
+  return { failing, other, outside };
 }
 
 /**

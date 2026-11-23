@@ -7,6 +7,7 @@ const { phpFiles, unregisteredModules } = require('../extension');
 const { toolPackages, readComposer, installTools } = require('../tools');
 const { phpcsTotals, firstVersion } = require('../reports');
 const { resolveToolConfig } = require('./tool-config');
+const { scopeFilter } = require('../scope');
 
 async function validate(ctx) {
   const { extension, extensionName } = ctx.config;
@@ -70,7 +71,7 @@ async function phpcs(ctx) {
 
   let files;
   let scope = 'every file';
-  if (config.phpcs.scope === 'changed' && ctx.changed) {
+  if (['changed', 'lines'].includes(config.phpcs.scope) && ctx.changed) {
     scope = 'changed files';
     files = [...ctx.changed]
       .filter((file) => /\.(php|phtml)$/.test(file))
@@ -119,13 +120,21 @@ async function phpcs(ctx) {
   } catch {
     parsed = null;
   }
-  const totals = phpcsTotals(parsed, threshold);
+  const filter = config.phpcs.scope === 'lines' ? scopeFilter(ctx, 'lines') : { scope: config.phpcs.scope, prefix: '', keep: () => true };
+  const totals = phpcsTotals(parsed, threshold, filter.keep);
   if (!totals) {
     throw new CheckFailed(`PHPCS configuration could not be loaded (${label})`);
   }
   const rule = threshold === 'errors' ? 'errors' : `severity ${threshold}+`;
-  const note = `${label}; ${versions} (${toolsLabel}); ${files.length} ${scope}: ${totals.failing} ${rule}, ${totals.other} other`;
-  return { status: totals.failing === 0 ? 'passed' : 'failed', note };
+  return phpcsOutcome(totals, { prefix: filter.prefix, lines: filter.scope === 'lines', summary: `${label}; ${versions} (${toolsLabel}); ${files.length} ${scope}`, rule });
 }
 
-module.exports = { validate, lint, phpcs };
+/** Status and note of PHPCS from its totals. */
+function phpcsOutcome(totals, { prefix, lines, summary, rule }) {
+  const counts = lines
+    ? `${totals.failing} ${rule} on changed lines, ${totals.outside} elsewhere in changed files, ${totals.other} other`
+    : `${totals.failing} ${rule}, ${totals.other} other`;
+  return { status: totals.failing === 0 ? 'passed' : 'failed', note: `${prefix}${summary}: ${counts}` };
+}
+
+module.exports = { validate, lint, phpcs, phpcsOutcome };
